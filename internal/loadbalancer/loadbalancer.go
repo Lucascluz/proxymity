@@ -1,23 +1,25 @@
 package loadbalancer
 
 import (
-	"errors"
+	"log"
 	"proxymity/internal/backend"
 )
 
 type LoadBalancer interface {
-	NextBackend() *backend.Backend
+	NextBackend() (*backend.Backend, error)
 }
 
-func ResolveMethod(method string, pool *backend.Pool) (LoadBalancer, error) {
+func ResolveMethod(method string, pool *backend.Pool) LoadBalancer {
 	switch method {
 	case "round-robin":
 		st := NewRoundRobin(pool)
-		return st, nil
+		return st
 
 	case "random":
 		st := NewRandom(pool)
-		return st, nil
+		return st
+	default:
+		log.Printf("No load balancing method recognized, defaulting to round-robin")
+		return NewRoundRobin(pool)
 	}
-	return nil, errors.New("method not recognized")
 }

@@ -13,8 +13,9 @@ type Config struct {
 }
 
 type ProxyConfig struct {
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
+	Host      string `yaml:"host"`
+	Port      string `yaml:"port"`
+	AdminPort string `yaml:"admin_port"`
 }
 
 type BackendConfig struct {

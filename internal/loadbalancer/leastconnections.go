@@ -16,12 +16,12 @@ func NewLeastConnections(pool *backend.Pool) *LeastConnections {
 	}
 }
 
-func (r *LeastConnections) NextBackend() *backend.Backend {
-	backends := r.pool.GetHealthyBackends()
-	if len(backends) == 0 {
-		return nil
+func (lc *LeastConnections) NextBackend() (*backend.Backend, error) {
+	backends, err := lc.pool.GetHealthyBackends()
+	if err != nil {
+		return nil, err
 	}
 
 	idx := rand.Intn(len(backends))
-	return backends[idx]
+	return backends[idx], nil
 }

@@ -16,13 +16,13 @@ func NewRoundRobin(pool *backend.Pool) *RoundRobin {
 	}
 }
 
-func (rr *RoundRobin) NextBackend() *backend.Backend {
-	backends := rr.pool.GetHealthyBackends()
-	if len(backends) == 0 {
-		return nil
+func (rr *RoundRobin) NextBackend() (*backend.Backend, error) {
+	backends, err := rr.pool.GetHealthyBackends()
+	if err != nil {
+		return nil, err
 	}
 
 	next := atomic.AddUint64(&rr.current, 1)
 	idx := int(next-1) % len(backends)
-	return backends[idx]
+	return backends[idx], err
 }

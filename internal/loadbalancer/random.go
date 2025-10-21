@@ -6,7 +6,7 @@ import (
 )
 
 type Random struct {
-	pool    *backend.Pool
+	pool *backend.Pool
 }
 
 func NewRandom(pool *backend.Pool) *Random {
@@ -15,12 +15,12 @@ func NewRandom(pool *backend.Pool) *Random {
 	}
 }
 
-func (r *Random) NextBackend() *backend.Backend {
-	backends := r.pool.GetHealthyBackends()
-	if len(backends) == 0 {
-		return nil
+func (r *Random) NextBackend() (*backend.Backend, error) {
+	backends, err := r.pool.GetHealthyBackends()
+	if err != nil {
+		return nil, err
 	}
 
 	idx := rand.Intn(len(backends))
-	return backends[idx]
+	return backends[idx], err
 }

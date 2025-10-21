@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"errors"
 	"sync"
 )
 
@@ -28,7 +29,7 @@ func (p *Pool) GetBackends() []*Backend {
 	return p.backends
 }
 
-func (p *Pool) GetHealthyBackends() []*Backend {
+func (p *Pool) GetHealthyBackends() ([]*Backend, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -38,5 +39,9 @@ func (p *Pool) GetHealthyBackends() []*Backend {
 			healthy = append(healthy, b)
 		}
 	}
-	return healthy
+
+	if len(healthy) == 0 {
+		return nil, errors.New("no healthy backends available")
+	}
+	return healthy, nil
 }

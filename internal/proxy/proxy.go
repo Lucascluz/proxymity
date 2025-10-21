@@ -19,10 +19,10 @@ func NewProxy(lb loadbalancer.LoadBalancer) *Proxy {
 
 func (p *Proxy) Handler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		backend := p.lb.NextBackend()
-		if backend == nil {
+		backend, err := p.lb.NextBackend()
+		if err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"error": "no healthy backends available",
+				"error": err.Error(),
 			})
 			return
 		}
@@ -30,7 +30,7 @@ func (p *Proxy) Handler() gin.HandlerFunc {
 		proxy := httputil.NewSingleHostReverseProxy(backend.URL)
 
 		proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-			log.Printf("Backend %s error: %v", backend.Name, err)
+			log.Printf("Errora at %s: %v", backend.Name, err)
 			backend.SetAlive(false)
 
 			c.JSON(http.StatusBadGateway, gin.H{
