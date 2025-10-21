@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
-	"proxymity/internal/loadbalancer"
+	"proxymity/internal/balancer"
 
 	"github.com/gin-gonic/gin"
 )

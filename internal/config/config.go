@@ -10,6 +10,7 @@ type Config struct {
 	Proxy        ProxyConfig        `yaml:"proxy"`
 	Backed       []BackendConfig    `yaml:"backend"`
 	LoadBalancer LoadBalancerConfig `yaml:"load-balancer"`
+	HealthCheck  HealthCheckConfig  `yaml:"health-check"`
 }
 
 type ProxyConfig struct {
@@ -27,6 +28,11 @@ type BackendConfig struct {
 
 type LoadBalancerConfig struct {
 	Method string `yaml:"method"`
+}
+
+type HealthCheckConfig struct {
+	Interval uint // Interval between checks in seconds
+	TimeOut  uint // Health check timeout in seconds
 }
 
 func Load(path string) (*Config, error) {

@@ -78,3 +78,14 @@ func StatusCheckHandler(pool *backend.Pool) gin.HandlerFunc {
 		})
 	}
 }
+
+// ConfigCheckHandler returns the current configuration settings
+func ConfigCheckHandler(config interface{}) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"service":   "proxymity",
+			"timestamp": time.Now().Unix(),
+			"config":    config,
+		})
+	}
+}
