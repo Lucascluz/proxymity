@@ -11,7 +11,7 @@ func validateBackendConfig(cfg []BackendConfig) error {
 
 	// At least one backend
 	if len(cfg) < 1 {
-		return errors.New("no backends conigured")
+		return errors.New("no backends configured")
 	}
 
 	for _, b := range cfg {
@@ -25,9 +25,9 @@ func validateBackendConfig(cfg []BackendConfig) error {
 			return fmt.Errorf("invalid host url for %s", b.Name)
 		}
 
-		// Backend health check path (starts with /, valid format, if empty default to /health)
-		if b.Health != "/" {
-
+		// Backend health check path (if not empty, must start with /)
+		if b.Health != "" && b.Health[0] != '/' {
+			return fmt.Errorf("backend '%s' health check path must start with '/'", b.Name)
 		}
 	}
 
@@ -56,8 +56,20 @@ func validateProxyConfig(cfg ProxyConfig) error {
 	return nil
 }
 
-func validateHealthCheckerConfig(cfg HealthCheckConfig) {
+func validateLoadBalancerConfig(cfg LoadBalancerConfig) error {
 
+	valid := map[string]bool{
+		"round-robin":       true,
+		"least-connections": true,
+		"weighted":          true,
+		"random":            true,
+	}
+
+	if valid[cfg.Method] {
+		return nil
+	}
+
+	return fmt.Errorf("%s is not a valid load-balancer method, defaulting to round-robin", cfg.Method)
 }
 
 func isValidUrl(str string) bool {
