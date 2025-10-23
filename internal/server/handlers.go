@@ -38,7 +38,7 @@ func StatusCheckHandler(pool *backend.Pool) gin.HandlerFunc {
 
 			backendStatus = append(backendStatus, gin.H{
 				"name":    b.Name,
-				"url":     b.URL.String(),
+				"url":     b.Host.String(),
 				"healthy": isHealthy,
 			})
 		}

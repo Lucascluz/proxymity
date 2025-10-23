@@ -4,25 +4,25 @@ proxy:
   admin_port: "9090"  # Admin server for /health and /status
 
 backend:
-  - name: "dummy-1"
+  - name: "backend-1"
     url: "http://localhost:8081"
     health: "/health"  # Health check endpoint path
     weight: 3  # For weighted load balancing (higher = more traffic)
     enabled: true
 
-  - name: "dummy-2"
+  - name: "backend-2"
     url: "http://localhost:8082"
     health: "/health"
     weight: 2
     enabled: true
 
-  - name: "dummy-3"
+  - name: "backend-3"
     url: "http://localhost:8083"
     health: "/api/health"  # Custom health endpoint
     weight: 1
     enabled: true
 
-  - name: "dummy-4"
+  - name: "backend-4"
     url: "http://localhost:8084"
     health: "/health"
     weight: 1

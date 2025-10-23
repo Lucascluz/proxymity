@@ -8,13 +8,13 @@ import (
 	"time"
 )
 
-type HealthCheck struct {
-	pool     *backend.Pool
-	interval *time.Ticker
-	timeout  time.Duration
+type HealthChecker struct {
+	pool    *backend.Pool
+	ticker  *time.Ticker
+	timeout time.Duration
 }
 
-func NewHealthCheck(cfg config.HealthCheckConfig, pool *backend.Pool) *HealthCheck {
+func NewHealthChecker(cfg config.HealthCheckConfig, pool *backend.Pool) *HealthChecker {
 
 	interval := time.Second * time.Duration(cfg.Interval)
 	if cfg.Interval < 1 {
@@ -26,23 +26,25 @@ func NewHealthCheck(cfg config.HealthCheckConfig, pool *backend.Pool) *HealthChe
 		timeout = 3 * time.Second // Default timeout to 3 seconds if not configured
 	}
 
-	return &HealthCheck{
-		pool:     pool,
-		interval: time.NewTicker(interval),
-		timeout:  timeout,
+	return &HealthChecker{
+		pool:    pool,
+		ticker:  time.NewTicker(interval),
+		timeout: timeout,
 	}
 }
-func (h *HealthCheck) Start() {
+func (h *HealthChecker) Start() {
 
 	client := &http.Client{
 		Timeout: h.timeout,
 	}
 
-	for range h.interval.C {
+	for range h.ticker.C {
 
 		for _, b := range h.pool.GetBackends() {
 
-			resp, err := client.Get(b.URL.String())
+			healthUrl := b.Host.JoinPath(b.Health)
+
+			resp, err := client.Get(healthUrl.String())
 			if err != nil {
 				b.SetAlive(false)
 				continue
@@ -61,16 +63,16 @@ func (h *HealthCheck) Start() {
 	}
 }
 
-func (h *HealthCheck) Stop() {
-	h.interval.Stop()
+func (h *HealthChecker) Stop() {
+	h.ticker.Stop()
 }
 
-func (h *HealthCheck) Backend(b *backend.Backend) bool {
+func (h *HealthChecker) Backend(b *backend.Backend) bool {
 	client := &http.Client{
 		Timeout: h.timeout,
 	}
 
-	resp, err := client.Get(b.URL.Path)
+	resp, err := client.Get(b.Host.Path)
 	if err != nil {
 		return false
 	}

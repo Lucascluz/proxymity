@@ -1,11 +1,5 @@
 package config
 
-import (
-	"os"
-
-	"github.com/goccy/go-yaml"
-)
-
 type Config struct {
 	Proxy        ProxyConfig        `yaml:"proxy"`
 	Backed       []BackendConfig    `yaml:"backend"`
@@ -21,7 +15,8 @@ type ProxyConfig struct {
 
 type BackendConfig struct {
 	Name    string `yaml:"name"`
-	URL     string `yaml:"url"`
+	Host     string `yaml:"url"`
+	Health  string `yaml:"health"`
 	Weight  int    `yaml:"weight"`
 	Enabled bool   `yaml:"enabled"`
 }
@@ -33,15 +28,4 @@ type LoadBalancerConfig struct {
 type HealthCheckConfig struct {
 	Interval uint // Interval between checks in seconds
 	TimeOut  uint // Health check timeout in seconds
-}
-
-func Load(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var cfg Config
-	err = yaml.Unmarshal(data, &cfg)
-	return &cfg, err
 }

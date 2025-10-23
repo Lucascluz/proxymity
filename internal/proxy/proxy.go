@@ -27,7 +27,7 @@ func (p *Proxy) Handler() gin.HandlerFunc {
 			return
 		}
 
-		proxy := httputil.NewSingleHostReverseProxy(backend.URL)
+		proxy := httputil.NewSingleHostReverseProxy(backend.Host)
 
 		proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 			log.Printf("Errora at %s: %v", backend.Name, err)

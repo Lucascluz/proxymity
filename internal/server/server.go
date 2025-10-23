@@ -19,7 +19,7 @@ type Server struct {
 	proxy         *http.Server
 	admin         *http.Server
 	pool          *backend.Pool
-	healthChecker *health.HealthCheck
+	healthChecker *health.HealthChecker
 }
 
 // Create a new http server to receive requests and proxy the to the registered backends.
@@ -28,21 +28,21 @@ func New(cfg *config.Config) *Server {
 	// Create backend pool
 	pool := backend.NewPool()
 	for _, bcfg := range cfg.Backed {
-		parsedURL, err := url.Parse(bcfg.URL)
+		parsedURL, err := url.Parse(bcfg.Host)
 		if err != nil {
 			// skip invalid backend URL
 			continue
 		}
 		b := &backend.Backend{
 			Name: bcfg.Name,
-			URL:  parsedURL,
+			Host: parsedURL,
 		}
 		b.SetAlive(true)
 		pool.AddBackend(b)
 	}
 
 	// Setup health checker
-	hc := health.NewHealthCheck(cfg.HealthCheck, pool)
+	hc := health.NewHealthChecker(cfg.HealthCheck, pool)
 
 	// Setup load balancer
 	lb := loadbalancer.ResolveMethod(cfg.LoadBalancer.Method, pool)
