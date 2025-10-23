@@ -15,6 +15,10 @@ type Backend struct {
 
 	// Path to the health check endpoint with /. Default to /health. If root path, insert /
 	Health string
+
+	// Define if will receive requests regardless of being alive or not
+	Enabled bool
+
 	alive  bool
 	conns  int
 	weight int

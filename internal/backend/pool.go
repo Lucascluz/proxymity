@@ -1,7 +1,7 @@
 package backend
 
 import (
-	"errors"
+	"fmt"
 	"sync"
 )
 
@@ -41,7 +41,28 @@ func (p *Pool) GetHealthyBackends() ([]*Backend, error) {
 	}
 
 	if len(healthy) == 0 {
-		return nil, errors.New("no healthy backends available")
+		return nil, fmt.Errorf("no healthy backends available")
 	}
 	return healthy, nil
+}
+
+func (p *Pool) GetAvailableBackends() ([]*Backend, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	healthy, err := p.GetHealthyBackends()
+	if err != nil {
+		return nil, err
+	}
+	available := make([]*Backend, 0)
+	for _, b := range healthy {
+		if b.IsAlive() {
+			available = append(available, b)
+		}
+	}
+
+	if len(available) == 0 {
+		return nil, fmt.Errorf("there are no backends available at the moment, retrying")
+	}
+	return available, nil
 }

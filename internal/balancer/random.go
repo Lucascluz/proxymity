@@ -16,7 +16,7 @@ func NewRandom(pool *backend.Pool) *Random {
 }
 
 func (r *Random) NextBackend() (*backend.Backend, error) {
-	backends, err := r.pool.GetHealthyBackends()
+	backends, err := r.pool.GetAvailableBackends()
 	if err != nil {
 		return nil, err
 	}

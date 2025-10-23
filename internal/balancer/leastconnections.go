@@ -17,7 +17,7 @@ func NewLeastConnections(pool *backend.Pool) *LeastConnections {
 }
 
 func (lc *LeastConnections) NextBackend() (*backend.Backend, error) {
-	backends, err := lc.pool.GetHealthyBackends()
+	backends, err := lc.pool.GetAvailableBackends()
 	if err != nil {
 		return nil, err
 	}
