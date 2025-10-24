@@ -3,13 +3,14 @@ package loadbalancer
 import (
 	"log"
 	"proxymity/internal/backend"
+	"proxymity/internal/metrics"
 )
 
 type LoadBalancer interface {
 	NextBackend() (*backend.Backend, error)
 }
 
-func ResolveMethod(method string, pool *backend.Pool) LoadBalancer {
+func ResolveMethod(method string, pool *backend.Pool, m *metrics.Metrics) LoadBalancer {
 	switch method {
 	case "round-robin":
 		st := NewRoundRobin(pool)

@@ -5,16 +5,18 @@ import (
 	"net/http"
 	"proxymity/internal/backend"
 	"proxymity/internal/config"
+	"proxymity/internal/metrics"
 	"time"
 )
 
 type HealthChecker struct {
 	pool    *backend.Pool
+	metrics *metrics.Metrics
 	ticker  *time.Ticker
 	timeout time.Duration
 }
 
-func NewHealthChecker(cfg config.HealthCheckConfig, pool *backend.Pool) *HealthChecker {
+func NewHealthChecker(cfg config.HealthCheckConfig, pool *backend.Pool, m *metrics.Metrics) *HealthChecker {
 
 	interval := time.Second * time.Duration(cfg.Interval)
 	if cfg.Interval < 1 {
@@ -28,6 +30,7 @@ func NewHealthChecker(cfg config.HealthCheckConfig, pool *backend.Pool) *HealthC
 
 	return &HealthChecker{
 		pool:    pool,
+		metrics: m,
 		ticker:  time.NewTicker(interval),
 		timeout: timeout,
 	}

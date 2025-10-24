@@ -10,6 +10,7 @@ import (
 	loadbalancer "proxymity/internal/balancer"
 	"proxymity/internal/config"
 	"proxymity/internal/health"
+	"proxymity/internal/metrics"
 	"proxymity/internal/proxy"
 
 	"github.com/gin-gonic/gin"
@@ -17,16 +18,19 @@ import (
 
 type Server struct {
 	proxy         *http.Server
-	admin         *http.Server
 	pool          *backend.Pool
 	healthChecker *health.HealthChecker
+	metrics       *metrics.Metrics
 }
 
 // Create a new http server to receive requests and proxy the to the registered backends.
 func New(cfg *config.Config) *Server {
+	
+	// Setup metrics
+	m := metrics.NewMetrics()
 
 	// Create backend pool
-	pool := backend.NewPool()
+	pool := backend.NewPool(m)
 	for _, bcfg := range cfg.Backed {
 		parsedURL, err := url.Parse(bcfg.Host)
 		if err != nil {
@@ -41,56 +45,35 @@ func New(cfg *config.Config) *Server {
 		pool.AddBackend(b)
 	}
 
+
 	// Setup health checker
-	hc := health.NewHealthChecker(cfg.HealthCheck, pool)
+	hc := health.NewHealthChecker(cfg.HealthCheck, pool, m)
 
 	// Setup load balancer
-	lb := loadbalancer.ResolveMethod(cfg.LoadBalancer.Method, pool)
+	lb := loadbalancer.ResolveMethod(cfg.LoadBalancer.Method, pool, m)
 
 	// Setup proxy
-	p := proxy.NewProxy(lb)
+	p := proxy.NewProxy(lb, m)
 
 	// Setup proxy router
-	proxyRouter := gin.Default()
-	proxyRouter.Any("/*path", p.Handler())
-
-	// Setup admin router for proxy information
-	adminRouter := gin.New()
-	adminRouter.Use(gin.Recovery())
-	adminRouter.GET("/health", HealthCheckHandler)
-	adminRouter.GET("/status", StatusCheckHandler(pool))
-	adminRouter.GET("/config", ConfigCheckHandler(cfg))
+	pRouter := gin.Default()
+	pRouter.GET("/api/proxy/health", Health)
+	pRouter.GET("/api/proxy/status", Status(pool))
+	pRouter.GET("/api/proxy/config", Config(cfg))
+	pRouter.NoRoute(p.Proxy())
 
 	return &Server{
 		pool: pool,
 		proxy: &http.Server{
 			Addr:    fmt.Sprintf("%s:%s", cfg.Proxy.Host, cfg.Proxy.Port),
-			Handler: proxyRouter,
-		},
-		admin: &http.Server{
-			Addr:    fmt.Sprintf("%s:%s", cfg.Proxy.Host, getAdminPort(cfg.Proxy.AdminPort)),
-			Handler: adminRouter,
+			Handler: pRouter,
 		},
 		healthChecker: hc,
+		metrics:       m,
 	}
-}
-
-// getAdminPort returns the admin port or default to 9090
-func getAdminPort(port string) string {
-	if port == "" {
-		return "9090"
-	}
-	return port
 }
 
 func (s *Server) Start() error {
-	// Start admin server in background
-	go func() {
-		log.Printf("Starting admin server on %s", s.admin.Addr)
-		if err := s.admin.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Printf("Admin server error: %v", err)
-		}
-	}()
 
 	// Start health checker
 	go s.healthChecker.Start()
@@ -104,11 +87,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 	// Stoping health checker
 	s.healthChecker.Stop()
-
-	// Shutdown both servers
-	if err := s.admin.Shutdown(ctx); err != nil {
-		log.Printf("Admin server shutdown error: %v", err)
-	}
 
 	return s.proxy.Shutdown(ctx)
 }

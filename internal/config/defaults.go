@@ -4,6 +4,9 @@ import "fmt"
 
 // Default values
 const (
+	DefaultProxyHost          = "0.0.0.0"
+	DefaultProxyPort          = "8080"
+	DefaultAdminPort          = "9090"
 	DefaultLoadBalancerMethod = "round-robin"
 	DefaultHealthCheckPath    = "/health"
 	DefaultBackendWeight      = 1
@@ -16,13 +19,12 @@ func ApplyBackendDefaults(backends []BackendConfig) []string {
 	warnings := []string{}
 
 	for _, b := range backends {
-		// Default health check path
+
 		if b.Health == "" {
 			b.Health = DefaultHealthCheckPath
 			warnings = append(warnings, fmt.Sprintf("Backend '%s': health check path not specified, using default: %s", b.Name, DefaultHealthCheckPath))
 		}
 
-		// Default weight
 		if b.Weight <= 0 {
 			oldWeight := b.Weight
 			b.Weight = DefaultBackendWeight
@@ -47,7 +49,6 @@ func ApplyLoadBalancerDefaults(lb *LoadBalancerConfig) []string {
 		"random":            true,
 	}
 
-	// Default load balancer method
 	if lb.Method == "" {
 		lb.Method = DefaultLoadBalancerMethod
 		warnings = append(warnings, fmt.Sprintf("Load balancer method not specified, using default: %s", DefaultLoadBalancerMethod))
@@ -64,21 +65,39 @@ func ApplyLoadBalancerDefaults(lb *LoadBalancerConfig) []string {
 func ApplyHealthCheckDefaults(hc *HealthCheckConfig) []string {
 	warnings := []string{}
 
-	// Default interval
 	if hc.Interval == 0 {
 		hc.Interval = DefaultHealthInterval
 		warnings = append(warnings, fmt.Sprintf("Health check interval not specified, using default: %d seconds", DefaultHealthInterval))
 	}
 
-	// Default timeout
 	if hc.TimeOut == 0 {
 		hc.TimeOut = DefaultHealthTimeout
 		warnings = append(warnings, fmt.Sprintf("Health check timeout not specified, using default: %d seconds", DefaultHealthTimeout))
 	}
 
-	// Validate that timeout is less than interval
 	if hc.TimeOut >= hc.Interval {
 		warnings = append(warnings, fmt.Sprintf("Warning: Health check timeout (%d) should be less than interval (%d)", hc.TimeOut, hc.Interval))
+	}
+
+	return warnings
+}
+
+func ApplyProxyDefaults(p *ProxyConfig) []string {
+	warnings := []string{}
+
+	if p.Host == "" {
+		p.Host = DefaultProxyHost
+		warnings = append(warnings, fmt.Sprintf("Proxy host no specified, using default: %d", DefaultProxyHost))
+	}
+
+	if p.Port == "" {
+		p.Port = DefaultProxyPort
+		warnings = append(warnings, fmt.Sprintf("Proxy Port no specified, using default: %d", DefaultProxyPort))
+	}
+
+	if p.AdminPort == "" {
+		p.AdminPort = DefaultAdminPort
+		warnings = append(warnings, fmt.Sprintf("Proxy AdminPort no specified, using default: %d", DefaultAdminPort))
 	}
 
 	return warnings
@@ -91,6 +110,7 @@ func ApplyAllDefaults(cfg *Config) []string {
 	warnings = append(warnings, ApplyBackendDefaults(cfg.Backed)...)
 	warnings = append(warnings, ApplyLoadBalancerDefaults(&cfg.LoadBalancer)...)
 	warnings = append(warnings, ApplyHealthCheckDefaults(&cfg.HealthCheck)...)
+	warnings = append(warnings, ApplyProxyDefaults(&cfg.Proxy)...)
 
 	return warnings
 }

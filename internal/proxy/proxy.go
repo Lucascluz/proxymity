@@ -5,19 +5,21 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"proxymity/internal/balancer"
+	"proxymity/internal/metrics"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Proxy struct {
 	lb loadbalancer.LoadBalancer
+	m *metrics.Metrics
 }
 
-func NewProxy(lb loadbalancer.LoadBalancer) *Proxy {
+func NewProxy(lb loadbalancer.LoadBalancer, m *metrics.Metrics) *Proxy {
 	return &Proxy{lb: lb}
 }
 
-func (p *Proxy) Handler() gin.HandlerFunc {
+func (p *Proxy) Proxy() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		backend, err := p.lb.NextBackend()
 		if err != nil {

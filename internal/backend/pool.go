@@ -2,17 +2,20 @@ package backend
 
 import (
 	"fmt"
+	"proxymity/internal/metrics"
 	"sync"
 )
 
 type Pool struct {
 	backends []*Backend
+	metrics  *metrics.Metrics
 	mu       sync.Mutex
 }
 
-func NewPool() *Pool {
+func NewPool(m *metrics.Metrics) *Pool {
 	return &Pool{
 		backends: make([]*Backend, 0),
+		metrics:  m,
 	}
 }
 

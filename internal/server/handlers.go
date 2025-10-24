@@ -11,8 +11,8 @@ import (
 
 var startTime = time.Now()
 
-// HealthCheckHandler returns basic health status of the proxy
-func HealthCheckHandler(c *gin.Context) {
+// Health returns basic health status of the proxy
+func Health(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":    "healthy",
 		"service":   "proxymity",
@@ -21,8 +21,8 @@ func HealthCheckHandler(c *gin.Context) {
 	})
 }
 
-// StatusCheckHandler returns detailed status including backend information
-func StatusCheckHandler(pool *backend.Pool) gin.HandlerFunc {
+// Status returns detailed status including backend information
+func Status(pool *backend.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		backends := pool.GetBackends()
 
@@ -79,8 +79,8 @@ func StatusCheckHandler(pool *backend.Pool) gin.HandlerFunc {
 	}
 }
 
-// ConfigCheckHandler returns the current configuration settings
-func ConfigCheckHandler(config interface{}) gin.HandlerFunc {
+// Config returns the current configuration settings
+func Config(config interface{}) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"service":   "proxymity",
