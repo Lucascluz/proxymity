@@ -25,7 +25,7 @@ type Server struct {
 
 // Create a new http server to receive requests and proxy the to the registered backends.
 func New(cfg *config.Config) *Server {
-	
+
 	// Setup metrics
 	m := metrics.NewMetrics()
 
@@ -44,7 +44,6 @@ func New(cfg *config.Config) *Server {
 		b.SetAlive(true)
 		pool.AddBackend(b)
 	}
-
 
 	// Setup health checker
 	hc := health.NewHealthChecker(cfg.HealthCheck, pool, m)

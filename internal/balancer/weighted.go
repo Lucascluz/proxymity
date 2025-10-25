@@ -8,13 +8,12 @@ import (
 )
 
 type Weighted struct {
-	pool    *backend.Pool
-	current uint64
+	BaseLoadBalancer
 }
 
 func NewWeighted(pool *backend.Pool) *Weighted {
 	return &Weighted{
-		pool: pool,
+		BaseLoadBalancer: BaseLoadBalancer{pool: pool},
 	}
 }
 

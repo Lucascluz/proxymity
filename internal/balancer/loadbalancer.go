@@ -8,19 +8,25 @@ import (
 
 type LoadBalancer interface {
 	NextBackend() (*backend.Backend, error)
+	CountAvailableBackends() int
 }
 
 func ResolveMethod(method string, pool *backend.Pool, m *metrics.Metrics) LoadBalancer {
 	switch method {
 	case "round-robin":
-		st := NewRoundRobin(pool)
-		return st
+		return NewRoundRobin(pool)
 
 	case "random":
-		st := NewRandom(pool)
-		return st
+		return NewRandom(pool)
+
+	case "least-connections":
+		return NewLeastConnections(pool)
+
+	case "weighted":
+		return NewWeighted(pool)
+
 	default:
-		log.Printf("No load balancing method recognized, defaulting to round-robin")
+		log.Printf("Error resolving balancer method. Defaulting to round-robin")
 		return NewRoundRobin(pool)
 	}
 }

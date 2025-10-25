@@ -6,13 +6,13 @@ import (
 )
 
 type RoundRobin struct {
-	pool    *backend.Pool
+	BaseLoadBalancer
 	current uint64
 }
 
 func NewRoundRobin(pool *backend.Pool) *RoundRobin {
 	return &RoundRobin{
-		pool: pool,
+		BaseLoadBalancer: BaseLoadBalancer{pool: pool},
 	}
 }
 

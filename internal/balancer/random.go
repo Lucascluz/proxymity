@@ -6,12 +6,12 @@ import (
 )
 
 type Random struct {
-	pool *backend.Pool
+	BaseLoadBalancer
 }
 
 func NewRandom(pool *backend.Pool) *Random {
 	return &Random{
-		pool: pool,
+		BaseLoadBalancer: BaseLoadBalancer{pool: pool},
 	}
 }
 

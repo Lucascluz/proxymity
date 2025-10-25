@@ -6,13 +6,13 @@ import (
 )
 
 type LeastConnections struct {
-	pool     *backend.Pool
+	BaseLoadBalancer
 	connsMap map[*backend.Backend]int
 }
 
 func NewLeastConnections(pool *backend.Pool) *LeastConnections {
 	return &LeastConnections{
-		pool: pool,
+		BaseLoadBalancer: BaseLoadBalancer{pool: pool},
 	}
 }
 
