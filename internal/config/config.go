@@ -1,14 +1,10 @@
 package config
 
-import "proxymity/internal/metrics"
-
 type Config struct {
 	Proxy        ProxyConfig        `yaml:"proxy"`
-	Backed       []BackendConfig    `yaml:"backend"`
+	Backend      []BackendConfig    `yaml:"backend"`
 	LoadBalancer LoadBalancerConfig `yaml:"load-balancer"`
 	HealthCheck  HealthCheckConfig  `yaml:"health-check"`
-
-	m *metrics.Metrics
 }
 
 type ProxyConfig struct {
@@ -22,7 +18,7 @@ type BackendConfig struct {
 	Host    string `yaml:"url"`
 	Health  string `yaml:"health"`
 	Weight  int    `yaml:"weight"`
-	Enabled bool   `yaml:"enabled"`
+	Enabled *bool  `yaml:"enabled"`
 }
 
 type LoadBalancerConfig struct {

@@ -15,24 +15,28 @@ const (
 )
 
 // Applies default values to backend configurations and returns a slice of warning messages for any defaults that were applied
-func ApplyBackendDefaults(backends []BackendConfig) []string {
+func ApplyBackendDefaults(backends *[]BackendConfig) []string {
 	warnings := []string{}
 
-	for _, b := range backends {
-
-		if b.Health == "" {
-			b.Health = DefaultHealthCheckPath
-			warnings = append(warnings, fmt.Sprintf("Backend '%s': health check path not specified, using default: %s", b.Name, DefaultHealthCheckPath))
+	for i := range *backends {
+		if (*backends)[i].Health == "" {
+			(*backends)[i].Health = DefaultHealthCheckPath
+			warnings = append(warnings, fmt.Sprintf("Backend '%s': health check path not specified, using default: %s", (*backends)[i].Name, DefaultHealthCheckPath))
 		}
 
-		if b.Weight <= 0 {
-			oldWeight := b.Weight
-			b.Weight = DefaultBackendWeight
+		if (*backends)[i].Weight <= 0 {
+			oldWeight := (*backends)[i].Weight
+			(*backends)[i].Weight = DefaultBackendWeight
 			if oldWeight != 0 {
-				warnings = append(warnings, fmt.Sprintf("Backend '%s': invalid weight %d, using default: %d", b.Name, oldWeight, DefaultBackendWeight))
+				warnings = append(warnings, fmt.Sprintf("Backend '%s': invalid weight %d, using default: %d", (*backends)[i].Name, oldWeight, DefaultBackendWeight))
 			}
 		}
 
+		if (*backends)[i].Enabled == nil {
+			defaultEnabled := true
+			(*backends)[i].Enabled = &defaultEnabled
+			warnings = append(warnings, fmt.Sprintf("Backend '%s': enabled not specified, using default: true", (*backends)[i].Name))
+		}
 	}
 
 	return warnings
@@ -87,17 +91,17 @@ func ApplyProxyDefaults(p *ProxyConfig) []string {
 
 	if p.Host == "" {
 		p.Host = DefaultProxyHost
-		warnings = append(warnings, fmt.Sprintf("Proxy host no specified, using default: %d", DefaultProxyHost))
+		warnings = append(warnings, fmt.Sprintf("Proxy host not specified, using default: %s", DefaultProxyHost))
 	}
 
 	if p.Port == "" {
 		p.Port = DefaultProxyPort
-		warnings = append(warnings, fmt.Sprintf("Proxy Port no specified, using default: %d", DefaultProxyPort))
+		warnings = append(warnings, fmt.Sprintf("Proxy Port not specified, using default: %s", DefaultProxyPort))
 	}
 
 	if p.AdminPort == "" {
 		p.AdminPort = DefaultAdminPort
-		warnings = append(warnings, fmt.Sprintf("Proxy AdminPort no specified, using default: %d", DefaultAdminPort))
+		warnings = append(warnings, fmt.Sprintf("Proxy AdminPort not specified, using default: %s", DefaultAdminPort))
 	}
 
 	return warnings
@@ -107,7 +111,7 @@ func ApplyProxyDefaults(p *ProxyConfig) []string {
 func ApplyAllDefaults(cfg *Config) []string {
 	warnings := []string{}
 
-	warnings = append(warnings, ApplyBackendDefaults(cfg.Backed)...)
+	warnings = append(warnings, ApplyBackendDefaults(&cfg.Backend)...)
 	warnings = append(warnings, ApplyLoadBalancerDefaults(&cfg.LoadBalancer)...)
 	warnings = append(warnings, ApplyHealthCheckDefaults(&cfg.HealthCheck)...)
 	warnings = append(warnings, ApplyProxyDefaults(&cfg.Proxy)...)

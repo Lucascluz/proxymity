@@ -16,7 +16,20 @@ type Proxy struct {
 }
 
 func NewProxy(lb loadbalancer.LoadBalancer, m *metrics.Metrics) *Proxy {
-	return &Proxy{lb: lb}
+	return &Proxy{lb: lb,
+		m: m}
+}
+
+// responseWriter wraps gin.ResponseWriter to track bytes written
+type responseWriter struct {
+	gin.ResponseWriter
+	bytesWritten int64
+}
+
+func (rw *responseWriter) Write(data []byte) (int, error) {
+	n, err := rw.ResponseWriter.Write(data)
+	rw.bytesWritten += int64(n)
+	return n, err
 }
 
 func (p *Proxy) Proxy() gin.HandlerFunc {
@@ -26,6 +39,9 @@ func (p *Proxy) Proxy() gin.HandlerFunc {
 			tried    int
 			maxTries = p.lb.CountAvailableBackends()
 		)
+
+		log.Printf("\n %d available backends \n", maxTries)
+
 		for tried < maxTries {
 			backend, err := p.lb.NextBackend()
 			if err != nil {
@@ -34,14 +50,24 @@ func (p *Proxy) Proxy() gin.HandlerFunc {
 			}
 
 			proxy := httputil.NewSingleHostReverseProxy(backend.Host)
+
+			// Customize the error handler to capture errors
 			proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 				log.Printf("Error proxying to %s: %v", backend.Name, err)
-				backend.SetAlive(false)
 				lastErr = err
+				p.m.Error.IncServerErrs()
 			}
 
-			proxy.ServeHTTP(c.Writer, c.Request)
+			// Wrap the response writer to track bytes out
+			rw := &responseWriter{ResponseWriter: c.Writer}
+
+			proxy.ServeHTTP(rw, c.Request)
 			backend.AddConnection()
+
+			// Update metrics
+			p.m.Traffic.IncRequests()
+			p.m.Traffic.AddBytesIn(c.Request.ContentLength)
+			p.m.Traffic.AddBytesOut(rw.bytesWritten)
 
 			// If no error was set by ErrorHandler, request succeeded
 			if lastErr == nil {
@@ -50,10 +76,16 @@ func (p *Proxy) Proxy() gin.HandlerFunc {
 
 			tried++
 		}
-		// If we reach here, all attempts failed
+		// If all attempts failed
+		details := "no backends available"
+		if lastErr != nil {
+			details = lastErr.Error()
+		}
+
 		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"error":   "all backends failed",
-			"details": lastErr.Error(),
+			"details": details,
 		})
+		p.m.Error.IncServerErrs()
 	}
 }

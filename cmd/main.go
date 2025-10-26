@@ -19,7 +19,6 @@ func main() {
 		log.Fatal(err)
 		return
 	}
-log.Println(cfg)
 
 	// Create server
 	srv := server.New(cfg)

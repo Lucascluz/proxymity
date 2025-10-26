@@ -35,21 +35,22 @@ func NewHealthChecker(cfg config.HealthCheckConfig, pool *backend.Pool, m *metri
 		timeout: timeout,
 	}
 }
-func (h *HealthChecker) Start() {
+func (hc *HealthChecker) Start() {
 
 	client := &http.Client{
-		Timeout: h.timeout,
+		Timeout: hc.timeout,
 	}
 
-	for range h.ticker.C {
+	for range hc.ticker.C {
 
-		for _, b := range h.pool.GetBackends() {
+		for _, b := range hc.pool.GetBackends() {
 
 			healthUrl := b.Host.JoinPath(b.Health)
 
 			resp, err := client.Get(healthUrl.String())
 			if err != nil {
-				b.SetAlive(false)
+				b.SetHealthy(false)
+				
 				continue
 			}
 
@@ -58,21 +59,21 @@ func (h *HealthChecker) Start() {
 			resp.Body.Close()
 
 			if resp.StatusCode == http.StatusOK {
-				b.SetAlive(true)
+				b.SetHealthy(true)
 			} else {
-				b.SetAlive(false)
+				b.SetHealthy(false)
 			}
 		}
 	}
 }
 
-func (h *HealthChecker) Stop() {
-	h.ticker.Stop()
+func (hc *HealthChecker) Stop() {
+	hc.ticker.Stop()
 }
 
-func (h *HealthChecker) Backend(b *backend.Backend) bool {
+func (hc *HealthChecker) Backend(b *backend.Backend) bool {
 	client := &http.Client{
-		Timeout: h.timeout,
+		Timeout: hc.timeout,
 	}
 
 	resp, err := client.Get(b.Host.Path)

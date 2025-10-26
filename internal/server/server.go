@@ -30,18 +30,21 @@ func New(cfg *config.Config) *Server {
 	m := metrics.NewMetrics()
 
 	// Create backend pool
-	pool := backend.NewPool(m)
-	for _, bcfg := range cfg.Backed {
+	pool := backend.NewPool()
+	for _, bcfg := range cfg.Backend {
 		parsedURL, err := url.Parse(bcfg.Host)
 		if err != nil {
 			// skip invalid backend URL
 			continue
 		}
 		b := &backend.Backend{
-			Name: bcfg.Name,
-			Host: parsedURL,
+			Name:    bcfg.Name,
+			Host:    parsedURL,
+			Health:  bcfg.Health,
+			Enabled: *bcfg.Enabled,
+			Weight:  bcfg.Weight,
 		}
-		b.SetAlive(true)
+		b.SetHealthy(true)
 		pool.AddBackend(b)
 	}
 
@@ -59,6 +62,7 @@ func New(cfg *config.Config) *Server {
 	pRouter.GET("/api/proxy/health", Health)
 	pRouter.GET("/api/proxy/status", Status(pool))
 	pRouter.GET("/api/proxy/config", Config(cfg))
+	pRouter.GET("/metrics", Metrics(m))
 	pRouter.NoRoute(p.Proxy())
 
 	return &Server{

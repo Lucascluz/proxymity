@@ -3,6 +3,8 @@ package server
 import (
 	"net/http"
 	"proxymity/internal/backend"
+	"proxymity/internal/config"
+	"proxymity/internal/metrics"
 	"runtime"
 	"time"
 
@@ -31,7 +33,7 @@ func Status(pool *backend.Pool) gin.HandlerFunc {
 		healthyCount := 0
 
 		for _, b := range backends {
-			isHealthy := b.IsAlive()
+			isHealthy := b.IsHealthy()
 			if isHealthy {
 				healthyCount++
 			}
@@ -39,6 +41,9 @@ func Status(pool *backend.Pool) gin.HandlerFunc {
 			backendStatus = append(backendStatus, gin.H{
 				"name":    b.Name,
 				"url":     b.Host.String(),
+				"health":  b.Health,
+				"enabled": b.IsEnabled(),
+				"weight":  b.GetWeight(),
 				"healthy": isHealthy,
 			})
 		}
@@ -80,12 +85,19 @@ func Status(pool *backend.Pool) gin.HandlerFunc {
 }
 
 // Config returns the current configuration settings
-func Config(config interface{}) gin.HandlerFunc {
+func Config(config *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"service":   "proxymity",
 			"timestamp": time.Now().Unix(),
 			"config":    config,
 		})
+	}
+}
+
+// Metrics returns the current metrics
+func Metrics(metrics *metrics.Metrics) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, metrics)
 	}
 }

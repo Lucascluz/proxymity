@@ -26,7 +26,7 @@ func Load(path string) (*Config, error) {
 	}
 
 	// Validate configs (fatal errors only)
-	err = validateBackendConfig(cfg.Backed)
+	err = validateBackendConfig(cfg.Backend)
 	if err != nil {
 		return nil, err
 	}

@@ -8,7 +8,7 @@ type BaseLoadBalancer struct {
 }
 
 func (b *BaseLoadBalancer) CountAvailableBackends() int {
-	backends, err := b.pool.GetHealthyBackends()
+	backends, err := b.pool.GetAvailableBackends()
 	if err != nil {
 		return 0
 	}
