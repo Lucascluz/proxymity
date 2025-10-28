@@ -4,25 +4,25 @@ proxy:
   admin_port: "9090"  # Admin server for /health and /status
 
 backend:
-  - name: "backend-1"
+  - name: "dummy-1"
     url: "http://localhost:8081"
     health: "/health"  # Health check endpoint path
     weight: 3  # For weighted load balancing (higher = more traffic)
     enabled: true
 
-  - name: "backend-2"
+  - name: "dummy-2"
     url: "http://localhost:8082"
     health: "/health"
     weight: 2
     enabled: true
 
-  - name: "backend-3"
+  - name: "dummy-3"
     url: "http://localhost:8083"
     health: "/api/health"  # Custom health endpoint
     weight: 1
     enabled: true
 
-  - name: "backend-4"
+  - name: "dummy-4"
     url: "http://localhost:8084"
     health: "/health"
     weight: 1
@@ -32,5 +32,5 @@ load-balancer:
   method: "round-robin"  # Options: "round-robin", "random", "least-connections", "weighted"
 
 health-check:
-  interval: 10  # Check backends every 10 seconds
-  timeout: 5    # Health check request timeout in seconds
+  interval: 5  # Check backends every 5 seconds
+  timeout: 3    # Health check request timeout in seconds

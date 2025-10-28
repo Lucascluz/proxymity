@@ -62,7 +62,7 @@ func New(cfg *config.Config) *Server {
 	pRouter.GET("/api/proxy/health", Health)
 	pRouter.GET("/api/proxy/status", Status(pool))
 	pRouter.GET("/api/proxy/config", Config(cfg))
-	pRouter.GET("/metrics", Metrics(m))
+	pRouter.GET("/api/proxy/metrics", Metrics(m))
 	pRouter.NoRoute(p.Proxy())
 
 	return &Server{

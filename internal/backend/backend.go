@@ -1,9 +1,9 @@
 package backend
 
 import (
-	"fmt"
 	"net/url"
 	"sync"
+	"time"
 )
 
 type Backend struct {
@@ -25,6 +25,8 @@ type Backend struct {
 
 	healthy bool
 	conns   int
+	checked time.Time
+	backoff time.Duration
 	mu      sync.Mutex
 }
 
@@ -60,12 +62,10 @@ func (b *Backend) IsAvailable() bool {
 	defer b.mu.Unlock()
 
 	if !b.Enabled {
-		fmt.Printf("Backend %s is disabled\n", b.Name)
 		return false
 	}
 
 	if !b.healthy {
-		fmt.Printf("Backend %s is unHealthy\n", b.Name)
 		return false
 	}
 
@@ -91,4 +91,48 @@ func (b *Backend) GetWeight() int {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return b.Weight
+}
+
+func (b *Backend) GetChecked() time.Time {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	return b.checked
+}
+
+func (b *Backend) SetChecked() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.checked = time.Now()
+}
+
+func (b *Backend) GetBackoff() time.Duration {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	return b.backoff
+}
+
+func (b *Backend) ExpBackof() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if b.backoff == 0 {
+		b.backoff = 1 * time.Second
+		return
+	}
+
+	if b.backoff >= 1*time.Minute {
+		return
+	}
+
+	b.backoff = b.backoff * 2
+}
+
+func (b *Backend) ResetBackof() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.backoff = 0
 }

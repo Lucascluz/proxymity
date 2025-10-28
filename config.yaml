@@ -1,8 +1,3 @@
-proxy:
-  host: "0.0.0.0"
-  port: "8080"
-  admin_port: "9090"  # Admin server for /health and /status
-
 backend:
   - name: "dummy-1"
     url: "http://localhost:8081"
@@ -27,10 +22,3 @@ backend:
     health: "/health"
     weight: 1
     enabled: false  # Disabled backend (won't receive traffic)
-
-load-balancer:
-  method: "round-robin"  # Options: "round-robin", "random", "least-connections", "weighted"
-
-health-check:
-  interval: 10  # Check backends every 10 seconds
-  timeout: 5    # Health check request timeout in seconds

@@ -10,8 +10,8 @@ const (
 	DefaultLoadBalancerMethod = "round-robin"
 	DefaultHealthCheckPath    = "/health"
 	DefaultBackendWeight      = 1
-	DefaultHealthInterval     = 30 // seconds
-	DefaultHealthTimeout      = 5  // seconds
+	DefaultHealthInterval     = 10 // seconds
+	DefaultHealthTimeout      = 3  // seconds
 )
 
 // Applies default values to backend configurations and returns a slice of warning messages for any defaults that were applied

@@ -22,7 +22,7 @@ func Load(path string) (*Config, error) {
 	// Apply defaults and collect warnings
 	warnings := ApplyAllDefaults(&cfg)
 	for _, w := range warnings {
-		fmt.Fprintf(os.Stderr, "CONFIG WARNING: %s\n", w)
+		fmt.Fprintf(os.Stderr, "[Proxymity-debug] [CONFIG WARNING] %s\n", w)
 	}
 
 	// Validate configs (fatal errors only)

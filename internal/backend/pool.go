@@ -38,9 +38,6 @@ func (p *Pool) GetAvailableBackends() ([]*Backend, error) {
 	for _, b := range p.backends {
 		if b.IsAvailable() {
 			available = append(available, b)
-			fmt.Printf("Backend %s is available\n", b.Name)
-		} else {
-			fmt.Printf("Backend %s is not available\n", b.Name)
 		}
 	}
 

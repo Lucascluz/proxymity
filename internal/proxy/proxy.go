@@ -4,8 +4,9 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
-	loadbalancer "proxymity/internal/balancer"
+	"proxymity/internal/balancer"
 	"proxymity/internal/metrics"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -61,6 +62,7 @@ func (p *Proxy) Proxy() gin.HandlerFunc {
 			// Wrap the response writer to track bytes out
 			rw := &responseWriter{ResponseWriter: c.Writer}
 
+			latency := time.Now()
 			proxy.ServeHTTP(rw, c.Request)
 			backend.AddConnection()
 
@@ -71,6 +73,8 @@ func (p *Proxy) Proxy() gin.HandlerFunc {
 
 			// If no error was set by ErrorHandler, request succeeded
 			if lastErr == nil {
+				p.m.Latency.RecordLatency(float64(time.Since(latency)))
+				p.m.Traffic.IncResponses()
 				return
 			}
 

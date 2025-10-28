@@ -16,22 +16,16 @@ type HealthChecker struct {
 	timeout time.Duration
 }
 
-func NewHealthChecker(cfg config.HealthCheckConfig, pool *backend.Pool, m *metrics.Metrics) *HealthChecker {
+func NewHealthChecker(cfg config.HealthCheckConfig, pool *backend.Pool, metrics *metrics.Metrics) *HealthChecker {
 
 	interval := time.Second * time.Duration(cfg.Interval)
-	if cfg.Interval < 1 {
-		interval = 5 * time.Second // Default interval to 5 seconds if not configured
-	}
-
+	ticker := time.NewTicker(interval)
 	timeout := time.Duration(cfg.TimeOut) * time.Second
-	if cfg.TimeOut < 1 {
-		timeout = 3 * time.Second // Default timeout to 3 seconds if not configured
-	}
 
 	return &HealthChecker{
 		pool:    pool,
-		metrics: m,
-		ticker:  time.NewTicker(interval),
+		metrics: metrics,
+		ticker:  ticker,
 		timeout: timeout,
 	}
 }
@@ -45,12 +39,19 @@ func (hc *HealthChecker) Start() {
 
 		for _, b := range hc.pool.GetBackends() {
 
-			healthUrl := b.Host.JoinPath(b.Health)
+			// Skip health check if in backoff period
+			if time.Since(b.GetChecked()) < b.GetBackoff() {
+				continue
+			}
 
+			// Health check
+			b.SetChecked()
+			healthUrl := b.Host.JoinPath(b.Health)
 			resp, err := client.Get(healthUrl.String())
 			if err != nil {
-				b.SetHealthy(false)
-				
+				hc.metrics.Error.IncClientErrs()
+				b.SetHealthy(false) // Mark unhealthy on network failure
+				b.ExpBackof()       // Increase backoff
 				continue
 			}
 
@@ -58,10 +59,12 @@ func (hc *HealthChecker) Start() {
 			_, _ = io.Copy(io.Discard, resp.Body)
 			resp.Body.Close()
 
-			if resp.StatusCode == http.StatusOK {
+			if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 				b.SetHealthy(true)
+				b.ResetBackof()
 			} else {
 				b.SetHealthy(false)
+				b.ExpBackof()
 			}
 		}
 	}
@@ -69,18 +72,4 @@ func (hc *HealthChecker) Start() {
 
 func (hc *HealthChecker) Stop() {
 	hc.ticker.Stop()
-}
-
-func (hc *HealthChecker) Backend(b *backend.Backend) bool {
-	client := &http.Client{
-		Timeout: hc.timeout,
-	}
-
-	resp, err := client.Get(b.Host.Path)
-	if err != nil {
-		return false
-	}
-	defer resp.Body.Close()
-
-	return resp.StatusCode == http.StatusOK
 }
