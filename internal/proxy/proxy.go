@@ -4,8 +4,9 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
-	"proxymity/internal/balancer"
+	loadbalancer "proxymity/internal/balancer"
 	"proxymity/internal/metrics"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -21,13 +22,22 @@ func NewProxy(lb loadbalancer.LoadBalancer, m *metrics.Metrics) *Proxy {
 		m: m}
 }
 
-// responseWriter wraps gin.ResponseWriter to track bytes written
+// responseWriter wraps gin.ResponseWriter to track bytes written and status
 type responseWriter struct {
 	gin.ResponseWriter
 	bytesWritten int64
+	status       int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.status = code
+	rw.ResponseWriter.WriteHeader(code)
 }
 
 func (rw *responseWriter) Write(data []byte) (int, error) {
+	if rw.status == 0 {
+		rw.status = http.StatusOK // Default if not set
+	}
 	n, err := rw.ResponseWriter.Write(data)
 	rw.bytesWritten += int64(n)
 	return n, err
@@ -56,10 +66,15 @@ func (p *Proxy) Proxy() gin.HandlerFunc {
 			proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 				log.Printf("Error proxying to %s: %v", backend.Name, err)
 				lastErr = err
-				p.m.Error.IncServerErrs()
+				// Classify proxy errors
+				if strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "deadline") {
+					p.m.Error.IncTimeoutsErrs()
+				} else {
+					p.m.Error.IncProxyErrs()
+				}
 			}
 
-			// Wrap the response writer to track bytes out
+			// Wrap the response writer to track bytes out and status
 			rw := &responseWriter{ResponseWriter: c.Writer}
 
 			latency := time.Now()
@@ -71,6 +86,13 @@ func (p *Proxy) Proxy() gin.HandlerFunc {
 			p.m.Traffic.AddBytesIn(c.Request.ContentLength)
 			p.m.Traffic.AddBytesOut(rw.bytesWritten)
 
+			// Classify based on response status
+			if rw.status >= 400 && rw.status < 500 {
+				p.m.Error.IncClientErrs()
+			} else if rw.status >= 500 {
+				p.m.Error.IncServerErrs()
+			}
+
 			// If no error was set by ErrorHandler, request succeeded
 			if lastErr == nil {
 				p.m.Latency.RecordLatency(float64(time.Since(latency)))
@@ -79,6 +101,7 @@ func (p *Proxy) Proxy() gin.HandlerFunc {
 			}
 
 			tried++
+			p.m.Error.IncRetrysErrs()
 		}
 		// If all attempts failed
 		details := "no backends available"
@@ -90,6 +113,6 @@ func (p *Proxy) Proxy() gin.HandlerFunc {
 			"error":   "all backends failed",
 			"details": details,
 		})
-		p.m.Error.IncServerErrs()
+		p.m.Error.IncProxyErrs()
 	}
 }

@@ -49,9 +49,9 @@ func (hc *HealthChecker) Start() {
 			healthUrl := b.Host.JoinPath(b.Health)
 			resp, err := client.Get(healthUrl.String())
 			if err != nil {
-				hc.metrics.Error.IncClientErrs()
-				b.SetHealthy(false) // Mark unhealthy on network failure
-				b.ExpBackof()       // Increase backoff
+				// Health check network failure - don't count as client error
+				b.SetHealthy(false)
+				b.ExpBackof()
 				continue
 			}
 
@@ -65,6 +65,7 @@ func (hc *HealthChecker) Start() {
 			} else {
 				b.SetHealthy(false)
 				b.ExpBackof()
+				hc.metrics.Error.IncServerErrs() // Count non-2xx as server errors for health checks
 			}
 		}
 	}

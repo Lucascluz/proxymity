@@ -10,10 +10,10 @@ import (
 )
 
 type ResourceMetrics struct {
-	cpuUse    float64
-	memUse    float64
-	avgCpuUse float64
-	avgMemUse float64
+	CpuUse    float64
+	MemUse    float64
+	AvgCpuUse float64
+	AvgMemUse float64
 
 	count int64
 	mu    sync.Mutex
@@ -41,13 +41,13 @@ func (r *ResourceMetrics) GetSystemUsage() (currentCPU, avgCPU, currentMem, avgM
 	}
 
 	// Update running averages
-	r.cpuUse = currentCPU
-	r.memUse = currentMem
+	r.CpuUse = currentCPU
+	r.MemUse = currentMem
 	r.count++
-	r.avgCpuUse = (r.avgCpuUse*float64(r.count-1) + currentCPU) / float64(r.count)
-	r.avgMemUse = (r.avgMemUse*float64(r.count-1) + currentMem) / float64(r.count)
+	r.AvgCpuUse = (r.AvgCpuUse*float64(r.count-1) + currentCPU) / float64(r.count)
+	r.AvgMemUse = (r.AvgMemUse*float64(r.count-1) + currentMem) / float64(r.count)
 
-	return r.cpuUse, r.avgCpuUse, r.memUse, r.avgMemUse, nil
+	return r.CpuUse, r.AvgCpuUse, r.MemUse, r.AvgMemUse, nil
 }
 
 func (r *ResourceMetrics) getCPUUsage() (float64, error) {
